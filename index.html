@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EP-EL · SMC/ICT Paper Lab</title>
+<style>
+:root{--bg:#f4f1ea;--card:#faf8f2;--ink:#1f2f35;--mute:#6f7b7e;--line:#e4dfd3;--nav:#1f3a42;--navink:#cfd8d6;
+--accent:#e0a63a;--good:#2e7d5b;--bad:#b5483a;--chip:#ece9e0;--goodbg:#edf3ec;}
+@media (prefers-color-scheme:dark){:root{--bg:#12191b;--card:#1a2427;--ink:#e7ece9;--mute:#94a3a2;--line:#2a373a;--nav:#0d1416;
+--navink:#9fb0ae;--chip:#243034;--goodbg:#18302a;--good:#52b88a;--bad:#e0776a;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+padding:env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom)) 0}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 16px 6px;gap:8px}
+h1{font-size:20px;margin:0;font-weight:600}
+.chip{display:inline-block;background:var(--chip);border-radius:999px;padding:4px 12px;font:12px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.chip.good{background:var(--goodbg);color:var(--good)} .chip.bad{color:var(--bad)}
+main{padding:8px 14px;max-width:760px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;margin:12px 0}
+.card h2{font-size:18px;margin:0 0 4px;font-weight:600}
+.sub{color:var(--mute);font-size:14px;margin:0 0 12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px}
+.lbl{font:12px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.big{font-size:30px;font-weight:600;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.good{color:var(--good)}.bad{color:var(--bad)}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:15px}
+.row:first-of-type{border-top:0}
+.row span:first-child{color:var(--mute)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:14px;padding:10px 14px;cursor:pointer}
+button.primary{background:var(--nav);color:#fff;border-color:var(--nav)} button.on{outline:2px solid var(--accent)}
+button:disabled{opacity:.5}
+.note{font-size:13px;color:var(--mute);margin-top:10px}
+.warn{background:var(--card);border:1px solid var(--bad);color:var(--bad);border-radius:14px;padding:10px 12px;font-size:14px;margin:10px 0}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font:11px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);text-align:left;padding:8px 8px;white-space:nowrap}
+td{padding:9px 8px;border-top:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
+td.wrap{white-space:normal;min-width:200px;color:var(--mute)}
+label{display:block;font-weight:600;font-size:14px;margin-top:14px}
+input[type=text],input[type=number],select{width:100%;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-top:4px}
+.help{font-size:12.5px;color:var(--mute);margin-top:3px}
+.sw{display:flex;align-items:center;gap:10px;margin-top:14px;font-weight:600;font-size:14px}.sw input{width:20px;height:20px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--nav);display:flex;justify-content:space-around;padding:10px 4px calc(10px + env(safe-area-inset-bottom))}
+nav button{background:none;border:0;color:var(--navink);font:11px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border-radius:10px}
+nav button.active{color:var(--accent)}
+.hidden{display:none}
+.bar{height:8px;border-radius:6px;background:var(--chip);position:relative;margin:10px 0 4px}
+.bar i{position:absolute;top:-3px;width:3px;height:14px;background:var(--ink);border-radius:2px}
+.bar b{position:absolute;top:0;bottom:0;width:2px;background:var(--bad)}
+</style>
+</head>
+<body>
+<header><h1>EP-EL · SMC/ICT Paper Lab</h1><div><span class="chip">PAPER ONLY</span> <span class="chip" id="stateChip">…</span></div></header>
+<main>
+<section id="tab-overview">
+  <div class="card">
+    <h2>Bot control</h2>
+    <p class="sub" id="connLine">Connecting…</p>
+    <div class="btns" id="modeBtns">
+      <button data-mode="off">Stop</button>
+      <button data-mode="signal">Start paper trading</button>
+    </div>
+    <p class="note"><b>Paper-only experiment.</b> Uses the current SMC/ICT structural proxy with live public candles and payout quotes. It records simulated decisions and candle-settled outcomes; it cannot place orders. This is <b>not yet</b> a faithful deployment of the paper’s complete calibrated-ML + CVaR-LP system.</p>
+    <div id="errBox"></div>
+  </div>
+  <div class="grid">
+    <div class="stat"><div class="lbl">Estimated paper P&amp;L today</div><div class="big" id="pnl">$0.00</div><div class="sub" id="wl">0 wins · 0 losses</div></div>
+    <div class="stat"><div class="lbl">Paper signals today</div><div class="big" id="trades">0</div><div class="sub" id="screened">0 screened out</div></div>
+    <div class="stat"><div class="lbl">Win rate</div><div class="big" id="wr">—</div><div class="sub">Observed outcomes only</div></div>
+    <div class="stat"><div class="lbl">Deriv account balance</div><div class="big" id="bal">—</div><div class="sub" id="acct">No account connected · paper mode</div></div>
+  </div>
+  <div class="card">
+    <h2>Current candle</h2>
+    <p class="sub" id="candleSub">Waiting for the first closed candle.</p>
+    <div class="bar" id="zbar" style="display:none"><b id="zlo"></b><b id="zhi"></b><i id="zdot"></i></div>
+    <div id="candleRows"></div>
+  </div>
+  <div class="card">
+    <h2>Last signal evaluation</h2>
+    <p class="sub">Historical-frequency estimates are not validated probabilities.</p>
+    <div id="evalBox"><p class="sub">No SMC/ICT structural setup yet. Signals are evaluated only after candle close.</p></div>
+  </div>
+  <div class="card"><h2>Risk limits</h2><div id="riskRows"><p class="sub">Starts once the bot is running.</p></div></div>
+</section>
+
+<section id="tab-journal" class="hidden">
+  <div class="card"><h2>Does the false-signal filter work?</h2>
+    <p class="sub">Candle-based outcomes of every logged signal. It earns its place only if "passed" clearly beats "rejected".</p>
+    <div id="l2Box"><p class="sub">Not enough data yet.</p></div></div>
+  <div class="card"><h2>Calibration</h2><p class="sub">Predicted conservative probability vs realised win rate of taken trades.</p><div id="calBox"><p class="sub">No resolved trades yet.</p></div></div>
+  <div class="card"><h2>Trade journal</h2><p class="sub" id="jSub">Every signal, taken or skipped, with the reason.</p>
+    <div class="scroll"><table><thead><tr><th>Time (UTC)</th><th>Side</th><th>z</th><th>Action</th><th>p cons.</th><th>B/E</th><th>Stake</th><th>Result</th><th>Reason</th></tr></thead><tbody id="jBody"></tbody></table></div></div>
+</section>
+
+<section id="tab-backtest" class="hidden">
+  <div class="card"><h2>Backtest</h2>
+    <p class="sub">Walk-forward test of the full layered stack. Payout is an assumption here; live uses the real quote.</p>
+    <label>Data</label>
+    <select id="btSource"><option value="stored">Stored Deriv candles</option><option value="synthetic_random">Synthetic: random walk (should find nothing)</option><option value="synthetic_strong">Synthetic: strong planted edge (should trade)</option></select>
+    <label>Net payout per $1 (e.g. 0.85)</label><input type="number" id="btPayout" step="0.01" value="0.85">
+    <div class="btns" style="margin-top:8px"><button id="quoteBtn">Use live Deriv quote</button></div>
+    <p class="note" id="quoteNote">Payout depends on the contract length, so fetch the real quote for your configured contract.</p>
+    <div class="sw"><input type="checkbox" id="btL4"><span>Also test Layer 4 (regime gate)</span></div>
+    <div class="btns" style="margin-top:14px"><button class="primary" id="btRun">Run backtest</button><button id="dlBtn">Download history from Deriv</button></div>
+    <p class="note" id="dlNote"></p>
+  </div>
+  <div id="btOut"></div>
+</section>
+
+<section id="tab-config" class="hidden">
+  <div class="card"><h2>Configuration</h2><p class="sub">Changes apply from the next candle. Set thresholds once and leave them; re-tuning against the same data is how backtests lie.</p></div>
+  <div id="cfgForm"></div>
+  <div class="btns" style="margin:12px 0"><button class="primary" id="cfgSave">Save settings</button></div>
+  <p class="note" id="cfgMsg"></p>
+</section>
+</main>
+<nav>
+  <button data-tab="overview" class="active">Overview</button><button data-tab="journal">Journal</button>
+  <button data-tab="backtest">Backtest</button><button data-tab="config">Config</button>
+</nav>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const pct=x=>x==null?'—':(x*100).toFixed(1)+'%';
+const num=(x,d=2)=>x==null?'—':Number(x).toFixed(d);
+const money=x=>x==null?'—':(x<0?'-$':'$')+Math.abs(x).toFixed(2);
+const tstr=e=>e?new Date(e*1000).toISOString().replace('T',' ').slice(5,16):'—';
+function el(tag,attrs,...kids){const e=document.createElement(tag);for(const k in(attrs||{})){if(k==='class')e.className=attrs[k];else e.setAttribute(k,attrs[k]);}
+  for(const c of kids.flat()){if(c==null)continue;e.append(c.nodeType?c:document.createTextNode(String(c)));}return e;}
+async function api(path,opts){
+  const r=await fetch(path,opts?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(opts)}:undefined);
+  let data=null;try{data=await r.json();}catch(e){}
+  if(!r.ok)throw new Error((data&&(data.detail||data.error))||('HTTP '+r.status));
+  return data;
+}
+function rows(box,list){box.replaceChildren(...list.map(([a,b,cls])=>el('div',{class:'row'},el('span',null,a),el('span',{class:'mono '+(cls||'')},b))));}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));
+  for(const t of ['overview','journal','backtest','config'])$('tab-'+t).classList.toggle('hidden',t!==b.dataset.tab);
+  if(b.dataset.tab==='journal')loadJournal(); if(b.dataset.tab==='config')loadConfig(); if(b.dataset.tab==='backtest')loadFetch();
+});
+
+/* ---------- overview ---------- */
+let lastStatus=null;
+async function loadStatus(){
+  let s;try{s=await api('/api/status');}catch(e){$('connLine').textContent='Dashboard error: '+e.message;return;}
+  lastStatus=s;
+  const run=s.state==='running',err=s.state==='error';
+  $('stateChip').textContent=run?('Running · '+s.mode):s.state;$('stateChip').className='chip '+(run?'good':err?'bad':'');
+  $('connLine').textContent=s.connection==='public'?'Using Deriv public data · paper-only':'Not running';
+  document.querySelectorAll('#modeBtns button').forEach(b=>b.classList.toggle('on',b.dataset.mode===s.mode||(s.mode==='off'&&b.dataset.mode==='off')));
+  $('errBox').replaceChildren(...(s.last_error?[el('div',{class:'warn'},s.last_error)]:[]));
+  const t=s.today||{};
+  $('pnl').textContent=money(t.pnl);$('pnl').className='big '+(t.pnl>0?'good':t.pnl<0?'bad':'');
+  $('wl').textContent=`${t.wins||0} wins · ${t.losses||0} losses`;
+  $('trades').textContent=(t.trades||0)+(t.paper?` (+${t.paper} paper)`:'');$('screened').textContent=`${t.screened||0} screened out`;
+  const res=(t.wins||0)+(t.losses||0);$('wr').textContent=res?pct(t.wins/res):'—';
+  $('bal').textContent='—';$('acct').textContent='No account connected · paper mode';
+  const i=s.last_info;
+  if(i){
+    $('candleSub').textContent=`${s.symbol} · ${s.granularity/60}-min candles · ${s.contract_minutes}-min contracts · closed ${tstr(i.epoch)} UTC`+(s.market==='closed/stale'?' · market looks closed':'');
+    const z=i.z,band=i.band,span=Math.max(3,band+1),pos=z==null?50:Math.min(100,Math.max(0,50+z/span*50));
+    $('zbar').style.display='none'; // z-score is context only, not the SMC/ICT trigger
+    rows($('candleRows'),[['Close',num(i.close,5)],['z-score (context only)',num(z,2)],
+      ['Efficiency ratio (trend gauge)',num(i.er,2)],['Candles stored',String(s.candles)]]);
+  }
+  const e=s.last_eval;
+  if(e){
+    $('evalBox').replaceChildren(el('p',null,el('span',{class:'chip '+(e.action==='TRADE'?'good':'')},e.action),' ',`${e.direction==='PUT'?'Fall':'Rise'} · z ${num(e.z,2)} · ${tstr(e.candle)} UTC`),
+      el('p',{class:'sub'},e.reason),el('div',{id:'evRows'}));
+    rows($('evRows'),[['Settled signals (n)',String(e.n)],['Historical frequency',pct(e.p_hat)],['Conservative probability',pct(e.p_cons)],
+      ['Break-even',pct(e.breakeven)],['Quoted payout',e.payout_ratio==null?'—':pct(e.payout_ratio)],
+      ['Expected profit / loss (per $1)',`${money(e.ep)} / ${money(e.el)}`],['Loss / profit ratio',num(e.ratio,2)],['Stake',e.action==='TRADE'?money(e.stake):'—']]);
+  }
+  const r=s.risk;
+  if(r)rows($('riskRows'),[['Realized vs daily loss limit',`${money(r.pnl_today)} / -${money(r.max_daily_loss)}`],['Trades today',`${r.trades_today} / ${r.max_trades}`],
+    ['Consecutive losses',`${r.streak} / ${r.max_streak}`],['Paused until',r.paused_until>s.now?tstr(r.paused_until)+' UTC':'—'],['Position / cooldown until',r.busy_until>s.now?tstr(r.busy_until)+' UTC':'—']]);
+}
+document.querySelectorAll('#modeBtns button').forEach(b=>b.onclick=async()=>{
+  const m=b.dataset.mode;
+  try{await api('/api/control',{mode:m});}catch(e){alert(e.message);}loadStatus();
+});
+
+/* ---------- journal ---------- */
+async function loadJournal(){
+  const j=await api('/api/journal?limit=150');
+  $('jSub').textContent=`${j.summary.total||0} signals logged · ${j.summary.taken||0} taken`;
+  $('jBody').replaceChildren(...j.rows.map(r=>el('tr',null,el('td',null,tstr(r.candle_epoch)),el('td',null,r.direction==='PUT'?'Fall':'Rise'),el('td',null,num(r.z,2)),
+    el('td',{class:r.action==='TRADE'?'good':''},r.action+(r.mode==='signal'&&r.action==='TRADE'?' (paper)':'')),el('td',null,pct(r.p_cons)),el('td',null,pct(r.breakeven)),
+    el('td',null,r.action==='TRADE'?money(r.stake):'—'),
+    el('td',{class:r.result==null?'':(r.result?'good':'bad')},r.result==null?'pending':((r.result?'win':'loss')+(r.result_source==='candles'?' (candles)':''))),el('td',{class:'wrap'},r.reason||''))));
+  const L=j.l2;$('l2Box').replaceChildren(...(L.passed||L.rejected?['passed','rejected'].filter(k=>L[k]).map(k=>el('div',{class:'row'},el('span',null,'L2 '+k),
+    el('span',{class:'mono'},`n=${L[k].n} · hit ${pct(L[k].rate)} · CI [${pct(L[k].lo)}, ${pct(L[k].hi)}]`))):[el('p',{class:'sub'},'Not enough data yet.')]));
+  $('calBox').replaceChildren(...(j.calibration.length?j.calibration.map(g=>el('div',{class:'row'},el('span',null,`predicted ${g.lo.toFixed(2)}–${g.hi.toFixed(2)}`),el('span',{class:'mono'},`n=${g.n} · realised ${pct(g.realised)}`))):[el('p',{class:'sub'},'No resolved trades yet.')]));
+}
+
+/* ---------- backtest ---------- */
+function sumTxt(s){return !s||!s.n?'no trades':`n=${s.n} · win ${pct(s.wr)} · CI [${pct(s.lo)}, ${pct(s.hi)}] · P/L ${money(s.pnl)} · ROI ${pct(s.roi)}`;}
+async function loadFetch(){const f=await api('/api/fetch');
+  $('dlNote').textContent=(f.stored?`${f.stored} candles stored. `:'No candles stored yet. ')+(f.state==='running'?'Downloading…':f.state==='done'?f.detail:f.state==='error'?('Error: '+f.detail):'');
+  if(f.state==='running')setTimeout(loadFetch,3000);}
+$('quoteBtn').onclick=async()=>{
+  const b=$('quoteBtn');b.disabled=true;
+  try{const q=await api('/api/quote');const lo=Math.min(q.CALL.b,q.PUT.b);$('btPayout').value=lo.toFixed(2);
+    $('quoteNote').textContent=`Live ${q.symbol} ${q.minutes}-min quote: Rise pays ${pct(q.CALL.b)} (break-even ${pct(q.CALL.breakeven)}), Fall pays ${pct(q.PUT.b)} (break-even ${pct(q.PUT.breakeven)}). Using the lower payout to be conservative.`;}
+  catch(e){$('quoteNote').textContent=e.message;}
+  b.disabled=false;};
+$('dlBtn').onclick=async()=>{try{await api('/api/fetch',{candles:30000});}catch(e){alert(e.message);}loadFetch();};
+$('btRun').onclick=async()=>{
+  const btn=$('btRun');btn.disabled=true;btn.textContent='Running…';$('btOut').replaceChildren();
+  try{
+    const r=await api('/api/backtest',{source:$('btSource').value,payout:parseFloat($('btPayout').value),compare_l4:$('btL4').checked});
+    const out=[];
+    out.push(el('div',{class:'card'},el('h2',null,'Raw strategy'),el('p',{class:'sub'},`${r.n_candles} candles (~${Math.round(r.days)} days) · break-even at payout ${r.payout.toFixed(2)} is ${pct(r.breakeven)} (ties lose)`),
+      el('div',{class:'row'},el('span',null,'Hit rate (non-overlapping)'),el('span',{class:'mono'},r.raw.n?`${pct(r.raw.rate)} · CI [${pct(r.raw.lo)}, ${pct(r.raw.hi)}] · n=${r.raw.n}`:'no signals')),
+      el('div',{class:'row'},el('span',null,'Verdict'),el('span',{class:'mono '+(r.raw.proven?'good':'bad')},r.raw.proven?'CI clears break-even':'No proven raw edge')),
+      el('p',{class:'note'},'Break-even by payout: '+r.breakeven_table.map(t=>`${t.payout.toFixed(2)}→${pct(t.be)}`).join('  '))));
+    out.push(el('div',{class:'card'},el('h2',null,'Layers added in order'),el('p',{class:'sub'},'Out-of-sample = second half of the data.'),
+      ...r.variants.flatMap(v=>[el('div',{class:'row'},el('span',null,v.label),el('span',{class:'mono'},'')),
+        el('div',{class:'row'},el('span',null,'  all'),el('span',{class:'mono'},sumTxt(v.all))),el('div',{class:'row'},el('span',null,'  out-of-sample'),el('span',{class:'mono'},sumTxt(v.oos)))])));
+    const L=r.l2_check;
+    out.push(el('div',{class:'card'},el('h2',null,'Does Layer 2 help? (out-of-sample)'),...['passed','rejected'].filter(k=>L[k]).map(k=>el('div',{class:'row'},el('span',null,'L2 '+k),el('span',{class:'mono'},`n=${L[k].n} · hit ${pct(L[k].rate)} · CI [${pct(L[k].lo)}, ${pct(L[k].hi)}]`))),
+      el('p',{class:'note'},'Keep L2 only if "passed" clearly beats "rejected".')));
+    if(r.calibration.length)out.push(el('div',{class:'card'},el('h2',null,'Calibration of the full stack'),...r.calibration.map(g=>el('div',{class:'row'},el('span',null,`predicted ${g.lo.toFixed(2)}–${g.hi.toFixed(2)}`),el('span',{class:'mono'},`n=${g.n} · realised ${pct(g.realised)}`)))));
+    out.push(el('p',{class:'note'},'A backtest is not evidence of a future edge. Paper trade before trusting it.'));
+    $('btOut').replaceChildren(...out);
+  }catch(e){$('btOut').replaceChildren(el('div',{class:'warn'},e.message));}
+  btn.disabled=false;btn.textContent='Run backtest';
+};
+
+/* ---------- config ---------- */
+let cfgMeta=null;
+async function loadConfig(){
+  const c=await api('/api/config');cfgMeta=c;
+  $('cfgForm').replaceChildren(...c.schema.map(g=>el('div',{class:'card'},el('h2',null,g.title),...g.fields.map(f=>{
+    const v=c.values[f.name];
+    if(f.kind==='bool'){const cb=el('input',{type:'checkbox','data-name':f.name});cb.checked=!!v;return el('div',null,el('label',{class:'sw'},cb,el('span',null,f.label)),el('div',{class:'help'},f.help));}
+    const inp=el('input',{type:f.kind==='str'?'text':'number',step:f.kind==='int'?'1':'any','data-name':f.name});inp.value=v;
+    return el('div',null,el('label',null,f.label),inp,f.help?el('div',{class:'help'},f.help):null);
+  }))));
+}
+$('cfgSave').onclick=async()=>{
+  const body={};document.querySelectorAll('#cfgForm [data-name]').forEach(i=>{body[i.dataset.name]=i.type==='checkbox'?i.checked:i.value;});
+  try{const r=await api('/api/config',body);$('cfgMsg').textContent='Saved.'+(r.restarted?' Bot restarted for the new symbol/candle size.':' Applies from the next candle.');$('cfgMsg').className='note good';}
+  catch(e){$('cfgMsg').textContent=e.message;$('cfgMsg').className='note bad';}
+};
+
+loadStatus();setInterval(loadStatus,10000);
+</script>
+</body>
+</html>

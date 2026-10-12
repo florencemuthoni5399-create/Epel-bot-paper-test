@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: epel-smc-ict-paper-lab
+    runtime: python
+    plan: starter
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    disk:
+      name: epel-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: DATA_DIR
+        value: /var/data/smc_ict_paper
+      - key: BOT_AUTOSTART
+        value: signal
+      - key: PAPER_ONLY
+        value: "1"
+      - key: DASHBOARD_PASSWORD
+        generateValue: true
