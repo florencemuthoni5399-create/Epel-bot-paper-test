@@ -352,20 +352,24 @@ async def backtest(body: dict):
         cfg = replace(S.cfg)
         res = await asyncio.to_thread(analyze, c, cfg, b, bool(body.get("compare_l4")))
     res["source"] = src
+    if src.startswith("synthetic_"):
+        res["data_coverage"] = {"kind": "synthetic", "first_epoch": int(c.epoch[0]), "last_epoch": int(c.epoch[-1])}
+    else:
+        res["data_coverage"] = {"kind": "stored", "symbol": S.cfg.symbol, "granularity": S.cfg.granularity, "first_epoch": int(c.epoch[0]), "last_epoch": int(c.epoch[-1]), "candles": len(c)}
     return J(res)
 
 
 async def _fetch_job(n: int) -> None:
-    S.fetch.update(state="running", detail="connecting", got=0)
+    S.fetch.update(state="running", detail="connecting", got=0, requested=n, started_at=int(time.time()))
     ws = WS(PUBLIC_WS)
     try:
         await ws.open()
         S.fetch["detail"] = "downloading"
         c = await fetch_candles(ws, S.cfg.symbol, S.cfg.granularity, n, S.cfg.fetch_page_size)
         save_csv(c, f"{DATA_DIR}/{S.cfg.symbol}_{S.cfg.granularity}.csv")
-        S.fetch.update(state="done", detail=f"saved {len(c)} candles", got=len(c))
+        S.fetch.update(state="done", detail=f"saved {len(c)} candles", got=len(c), finished_at=int(time.time()), first_epoch=int(c.epoch[0]) if len(c) else None, last_epoch=int(c.epoch[-1]) if len(c) else None, requested=n)
     except Exception as e:
-        S.fetch.update(state="error", detail=f"{type(e).__name__}: {e}")
+        S.fetch.update(state="error", detail=f"{type(e).__name__}: {e}", finished_at=int(time.time()), requested=n)
     finally:
         await ws.close()
 
@@ -375,6 +379,7 @@ async def start_fetch(body: dict):
     if S.fetch["state"] == "running":
         raise HTTPException(429, "Download already running")
     n = max(1000, min(int(body.get("candles", 30000)), 100000))
+    S.fetch.update(state="queued", detail=f"queued request for {n} candles", requested=n, got=0)
     asyncio.create_task(_fetch_job(n))
     return J({"ok": True})
 
@@ -383,9 +388,25 @@ async def start_fetch(body: dict):
 async def fetch_status():
     path = f"{DATA_DIR}/{S.cfg.symbol}_{S.cfg.granularity}.csv"
     stored = None
+    first_epoch = last_epoch = None
     if os.path.exists(path):
-        stored = sum(1 for _ in open(path)) - 1
-    return J(dict(S.fetch, stored=stored))
+        try:
+            c = await asyncio.to_thread(load_csv, path)
+            stored = len(c)
+            if stored:
+                first_epoch, last_epoch = int(c.epoch[0]), int(c.epoch[-1])
+        except Exception as e:
+            return J(dict(S.fetch, state="error", detail=f"stored CSV unreadable: {type(e).__name__}: {e}", stored=None,
+                           symbol=S.cfg.symbol, granularity=S.cfg.granularity, file=path))
+    result = dict(S.fetch, stored=stored, first_epoch=first_epoch, last_epoch=last_epoch,
+                  symbol=S.cfg.symbol, granularity=S.cfg.granularity, file=path)
+    if result.get("state") == "done" and result.get("requested") and stored is not None and stored < result["requested"]:
+        result["coverage_warning"] = f"Deriv returned {stored} of {result['requested']} requested candles."
+    elif stored is not None and result.get("requested") and stored < result["requested"]:
+        result["coverage_warning"] = f"Stored history has {stored} candles; last download requested {result['requested']}."
+    else:
+        result["coverage_warning"] = None
+    return J(result)
 
 
 app.include_router(api)

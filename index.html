@@ -202,9 +202,15 @@ async function loadJournal(){
 
 /* ---------- backtest ---------- */
 function sumTxt(s){return !s||!s.n?'no trades':`n=${s.n} · win ${pct(s.wr)} · CI [${pct(s.lo)}, ${pct(s.hi)}] · P/L ${money(s.pnl)} · ROI ${pct(s.roi)}`;}
+function epochDate(x){if(x==null)return 'unknown';return new Date(x*1000).toISOString().replace('T',' ').slice(0,16)+' UTC';}
 async function loadFetch(){const f=await api('/api/fetch');
-  $('dlNote').textContent=(f.stored?`${f.stored} candles stored. `:'No candles stored yet. ')+(f.state==='running'?'Downloading…':f.state==='done'?f.detail:f.state==='error'?('Error: '+f.detail):'');
-  if(f.state==='running')setTimeout(loadFetch,3000);}
+  const count=f.stored==null?'No readable candles':`${f.stored} candles stored`;
+  const range=f.first_epoch!=null?` · ${epochDate(f.first_epoch)} → ${epochDate(f.last_epoch)}`:'';
+  const request=f.requested?` · requested ${f.requested}${f.got!=null&&f.state==='done'?`, received ${f.got}`:''}`:'';
+  const state=f.state==='running'?' · Downloading…':f.state==='queued'?' · Download queued':f.state==='done'?` · ${f.detail}`:f.state==='error'?` · Error: ${f.detail}`:'';
+  const warning=f.coverage_warning?` · WARNING: ${f.coverage_warning}`:'';
+  $('dlNote').textContent=`${count}${range}${request}${state}${warning} · ${f.symbol||'symbol unknown'} / ${f.granularity||'?'}s`;
+  if(f.state==='running'||f.state==='queued')setTimeout(loadFetch,3000);}
 $('quoteBtn').onclick=async()=>{
   const b=$('quoteBtn');b.disabled=true;
   try{const q=await api('/api/quote');const lo=Math.min(q.CALL.b,q.PUT.b);$('btPayout').value=lo.toFixed(2);
@@ -217,13 +223,21 @@ $('btRun').onclick=async()=>{
   try{
     const r=await api('/api/backtest',{source:$('btSource').value,payout:parseFloat($('btPayout').value),compare_l4:$('btL4').checked});
     const out=[];
-    out.push(el('div',{class:'card'},el('h2',null,'Raw strategy'),el('p',{class:'sub'},`${r.n_candles} candles (~${Math.round(r.days)} days) · break-even at payout ${r.payout.toFixed(2)} is ${pct(r.breakeven)} (ties lose)`),
+    out.push(el('div',{class:'card'},el('h2',null,'Raw strategy'),el('p',{class:'sub'},`${r.n_candles} candles (~${Math.round(r.days)} days) · break-even at payout ${r.payout.toFixed(2)} is ${pct(r.breakeven)} (ties lose)${r.data_coverage&&r.data_coverage.first_epoch!=null?' · '+epochDate(r.data_coverage.first_epoch)+' → '+epochDate(r.data_coverage.last_epoch):''}`),
       el('div',{class:'row'},el('span',null,'Hit rate (non-overlapping)'),el('span',{class:'mono'},r.raw.n?`${pct(r.raw.rate)} · CI [${pct(r.raw.lo)}, ${pct(r.raw.hi)}] · n=${r.raw.n}`:'no signals')),
       el('div',{class:'row'},el('span',null,'Verdict'),el('span',{class:'mono '+(r.raw.proven?'good':'bad')},r.raw.proven?'CI clears break-even':'No proven raw edge')),
       el('p',{class:'note'},'Break-even by payout: '+r.breakeven_table.map(t=>`${t.payout.toFixed(2)}→${pct(t.be)}`).join('  '))));
     out.push(el('div',{class:'card'},el('h2',null,'Layers added in order'),el('p',{class:'sub'},'Out-of-sample = second half of the data.'),
       ...r.variants.flatMap(v=>[el('div',{class:'row'},el('span',null,v.label),el('span',{class:'mono'},'')),
         el('div',{class:'row'},el('span',null,'  all'),el('span',{class:'mono'},sumTxt(v.all))),el('div',{class:'row'},el('span',null,'  out-of-sample'),el('span',{class:'mono'},sumTxt(v.oos)))])));
+    if(r.epel_diagnostic){const d=r.epel_diagnostic;out.push(el('div',{class:'card'},el('h2',null,'EP-EL gate diagnostic (end of dataset)'),
+      el('div',{class:'row'},el('span',null,'Raw candidate signals'),el('span',{class:'mono'},String(d.candidate_signals))),
+      el('div',{class:'row'},el('span',null,'Resolved prior signals available'),el('span',{class:'mono'},`${d.resolved_history_n} / ${d.min_samples} minimum`)),
+      el('div',{class:'row'},el('span',null,'Observed win rate'),el('span',{class:'mono'},d.p_hat==null?'not available':pct(d.p_hat))),
+      el('div',{class:'row'},el('span',null,'Conservative win probability'),el('span',{class:'mono'},pct(d.conservative_p))),
+      el('div',{class:'row'},el('span',null,'Required conservative probability'),el('span',{class:'mono'},pct(d.required_conservative_p))),
+      el('div',{class:'row'},el('span',null,'EL/EP ratio'),el('span',{class:'mono'},d.el_ep_ratio==null?'not finite':d.el_ep_ratio.toFixed(3)+` (max ${d.max_el_ep_ratio})`)),
+      el('p',{class:'note'},'Last-signal diagnostic only; it does not change thresholds or prove an edge. Reason: '+d.reason)));}
     const L=r.l2_check;
     out.push(el('div',{class:'card'},el('h2',null,'Does Layer 2 help? (out-of-sample)'),...['passed','rejected'].filter(k=>L[k]).map(k=>el('div',{class:'row'},el('span',null,'L2 '+k),el('span',{class:'mono'},`n=${L[k].n} · hit ${pct(L[k].rate)} · CI [${pct(L[k].lo)}, ${pct(L[k].hi)}]`))),
       el('p',{class:'note'},'Keep L2 only if "passed" clearly beats "rejected".')));

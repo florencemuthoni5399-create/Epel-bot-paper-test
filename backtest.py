@@ -24,6 +24,7 @@ from engine import Engine, Population
 from risk import RiskManager
 from stats import wilson_interval, breakeven
 from data import load_csv
+import layer1_epel
 
 
 @dataclass
@@ -106,6 +107,21 @@ def analyze(c: Candles, cfg: Config, b: float, compare_l4: bool = False) -> dict
         tr = simulate(c, vcfg, find_signals(c, vcfg), b)
         res["variants"].append(dict(label=label, all=summarize(tr, b),
                                     oos=summarize([t for t in tr if t.idx >= split], b)))
+    # Diagnostic snapshot at the final available signal; this is descriptive only and does not alter thresholds.
+    epel_diag = None
+    if sigs_all:
+        epop = Engine(cfg, sigs_all).pop
+        last_sig = sigs_all[-1]
+        ew, en = epop.stats(last_sig.idx, cfg.estimation_window)
+        lr = layer1_epel.evaluate(ew, en, b, cfg)
+        epel_diag = dict(candidate_signals=len(sigs_all), resolved_history_n=lr.n, wins=int(ew),
+                         p_hat=lr.p_hat if np.isfinite(lr.p_hat) else None,
+                         conservative_p=lr.p_cons, breakeven=lr.breakeven,
+                         required_conservative_p=lr.breakeven + cfg.min_prob_margin,
+                         el_ep_ratio=lr.ratio if np.isfinite(lr.ratio) else None,
+                         max_el_ep_ratio=cfg.max_loss_profit_ratio, passed=lr.passed, reason=lr.reason,
+                         min_samples=cfg.min_samples, estimation_window=cfg.estimation_window)
+    res["epel_diagnostic"] = epel_diag
     h2 = [s for s in sigs_all if s.win is not None and s.idx >= split]
     for name, group in (("passed", [s for s in h2 if s.l2_pass]), ("rejected", [s for s in h2 if not s.l2_pass])):
         if group:
